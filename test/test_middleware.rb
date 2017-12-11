@@ -80,9 +80,9 @@ class TestMiddleware < Sidekiq::Test
       end
 
       boss = Minitest::Mock.new
-      boss.expect(:options, {:queues => ['default'] }, [])
-      boss.expect(:options, {:queues => ['default'] }, [])
-      boss.expect(:options, {:queues => ['default'] }, [])
+      boss.expect(:options, { queues: { default: 0 } }, [])
+      boss.expect(:options, { queues: { default: 0 } }, [])
+      boss.expect(:options, { queues: { default: 0 } }, [])
       processor = Sidekiq::Processor.new(boss)
       boss.expect(:processor_done, nil, [processor])
       processor.process(Sidekiq::BasicFetch::UnitOfWork.new('queue:default', msg))

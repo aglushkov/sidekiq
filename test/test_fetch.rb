@@ -17,7 +17,7 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves' do
-      fetch = Sidekiq::BasicFetch.new(:queues => ['basic', 'bar'])
+      fetch = Sidekiq::BasicFetch.new(:queues => [['basic', 1], ['bar', 1]])
       uow = fetch.retrieve_work
       refute_nil uow
       assert_equal 'basic', uow.queue_name
@@ -30,9 +30,9 @@ class TestFetcher < Sidekiq::Test
     end
 
     it 'retrieves with strict setting' do
-      fetch = Sidekiq::BasicFetch.new(:queues => ['basic', 'bar', 'bar'], :strict => true)
+      fetch = Sidekiq::BasicFetch.new(queues: { basic: 0, bar: 0 }, strict: true)
       cmd = fetch.queues_cmd
-      assert_equal cmd, ['queue:basic', 'queue:bar', Sidekiq::BasicFetch::TIMEOUT]
+      assert_equal cmd, ['queue:basic', 'queue:bar']
     end
 
     it 'bulk requeues' do

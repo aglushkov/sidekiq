@@ -75,7 +75,7 @@ class TestActors < Sidekiq::Test
           end
         end
         def options
-          { :concurrency => 3, :queues => ['default'] }
+          { concurrency: 3, queues: { default: 0 } }
         end
       end
 

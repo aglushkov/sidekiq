@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 require 'sidekiq'
+require ('sidekiq/strict_queues')
+require ('sidekiq/weighted_queues')
 
 module Sidekiq
   class BasicFetch
@@ -24,16 +26,12 @@ module Sidekiq
     end
 
     def initialize(options)
-      @strictly_ordered_queues = !!options[:strict]
-      @queues = options[:queues].map { |q| "queue:#{q}" }
-      if @strictly_ordered_queues
-        @queues = @queues.uniq
-        @queues << TIMEOUT
-      end
+      queues_class = options[:strict] ? StrictQueues : WeightedQueues
+      @queues = queues_class.new(options[:queues])
     end
 
     def retrieve_work
-      work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd) }
+      work = Sidekiq.redis { |conn| conn.brpop(*queues_cmd, TIMEOUT) }
       UnitOfWork.new(*work) if work
     end
 
@@ -43,15 +41,8 @@ module Sidekiq
     # recreate the queue command each time we invoke Redis#brpop
     # to honor weights and avoid queue starvation.
     def queues_cmd
-      if @strictly_ordered_queues
-        @queues
-      else
-        queues = @queues.shuffle.uniq
-        queues << TIMEOUT
-        queues
-      end
+      @queues.names
     end
-
 
     # By leaving this as a class method, it can be pluggable and used by the Manager actor. Making it
     # an instance method will make it async to the Fetcher actor

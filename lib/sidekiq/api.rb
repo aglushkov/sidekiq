@@ -207,11 +207,12 @@ module Sidekiq
       Sidekiq.redis { |c| c.smembers('queues'.freeze) }.sort.map { |q| Sidekiq::Queue.new(q) }
     end
 
-    attr_reader :name
+    attr_reader :name, :rname, :weight
 
-    def initialize(name="default")
+    def initialize(name = 'default', weight = 1)
       @name = name
       @rname = "queue:#{name}"
+      @weight = weight < 1 ? 1 : weight
     end
 
     def size

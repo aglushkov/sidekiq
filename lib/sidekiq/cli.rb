@@ -421,10 +421,10 @@ module Sidekiq
     end
 
     def parse_queue(opts, q, weight=nil)
-      [weight.to_i, 1].max.times do
-       (opts[:queues] ||= []) << q
-      end
-      opts[:strict] = false if weight.to_i > 0
+      weight = weight.to_i
+      opts[:queues] ||= {}
+      opts[:queues][q.to_sym] = weight
+      opts[:strict] = false if weight > 0
     end
   end
 end

@@ -367,6 +367,25 @@ class TestApi < Sidekiq::Test
         end
       end
 
+      it 'has queue redis name attribute' do
+        q = Sidekiq::Queue.new
+        assert_equal q.rname, 'queue:default'
+
+        q = Sidekiq::Queue.new :foo
+        assert_equal q.rname, 'queue:foo'
+      end
+
+      it 'has queue weight attribute (1 by default)' do
+        q = Sidekiq::Queue.new
+        assert_equal q.weight, 1
+
+        q = Sidekiq::Queue.new :default, 0
+        assert_equal q.weight, 1
+
+        q = Sidekiq::Queue.new :default, 2
+        assert_equal q.weight, 2
+      end
+
       it 'can fetch by score' do
         same_time = Time.now.to_f
         add_retry('bob1', same_time)
