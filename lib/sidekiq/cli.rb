@@ -420,11 +420,12 @@ module Sidekiq
       queues_and_weights.each { |queue_and_weight| parse_queue(opts, *queue_and_weight) }
     end
 
-    def parse_queue(opts, q, weight=nil)
-      [weight.to_i, 1].max.times do
-       (opts[:queues] ||= []) << q
-      end
-      opts[:strict] = false if weight.to_i > 0
+    def parse_queue(opts, q, weight = nil)
+      opts[:strict] = false if weight
+
+      weight = weight.to_i
+      opts[:queues] ||= {}
+      opts[:queues][q.to_sym] = weight < 1 ? 1 : weight
     end
   end
 end

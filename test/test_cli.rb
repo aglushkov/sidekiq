@@ -56,7 +56,7 @@ class TestCli < Sidekiq::Test
 
     it 'changes queues' do
       @cli.parse(['sidekiq', '-q', 'foo', '-r', './test/fake_env.rb'])
-      assert_equal ['foo'], Sidekiq.options[:queues]
+      assert_equal Sidekiq.options[:queues], foo: 1
     end
 
     it 'accepts a process index' do
@@ -91,17 +91,17 @@ class TestCli < Sidekiq::Test
 
     it 'handles multiple queues with weights' do
       @cli.parse(['sidekiq', '-q', 'foo,3', '-q', 'bar', '-r', './test/fake_env.rb'])
-      assert_equal %w(foo foo foo bar), Sidekiq.options[:queues]
+      assert_equal Sidekiq.options[:queues], foo: 3, bar: 1
     end
 
     it 'handles queues with multi-word names' do
       @cli.parse(['sidekiq', '-q', 'queue_one', '-q', 'queue-two', '-r', './test/fake_env.rb'])
-      assert_equal %w(queue_one queue-two), Sidekiq.options[:queues]
+      assert_equal Sidekiq.options[:queues], queue_one: 1, :'queue-two' => 1
     end
 
     it 'handles queues with dots in the name' do
       @cli.parse(['sidekiq', '-q', 'foo.bar', '-r', './test/fake_env.rb'])
-      assert_equal ['foo.bar'], Sidekiq.options[:queues]
+      assert_equal Sidekiq.options[:queues], :'foo.bar' => 1
     end
 
     it 'sets verbose' do
@@ -189,8 +189,8 @@ class TestCli < Sidekiq::Test
         assert_equal 50, Sidekiq.options[:concurrency]
         assert_equal '/tmp/sidekiq-config-test.pid', Sidekiq.options[:pidfile]
         assert_equal '/tmp/sidekiq.log', Sidekiq.options[:logfile]
-        assert_equal 2, Sidekiq.options[:queues].count { |q| q == 'very_often' }
-        assert_equal 1, Sidekiq.options[:queues].count { |q| q == 'seldom' }
+        assert_equal 2, Sidekiq.options[:queues][:very_often]
+        assert_equal 1, Sidekiq.options[:queues][:seldom]
       end
     end
 
@@ -207,8 +207,8 @@ class TestCli < Sidekiq::Test
         assert_equal 50, Sidekiq.options[:concurrency]
         assert_equal '/tmp/sidekiq-config-test.pid', Sidekiq.options[:pidfile]
         assert_equal '/tmp/sidekiq.log', Sidekiq.options[:logfile]
-        assert_equal 2, Sidekiq.options[:queues].count { |q| q == 'very_often' }
-        assert_equal 1, Sidekiq.options[:queues].count { |q| q == 'seldom' }
+        assert_equal 2, Sidekiq.options[:queues][:very_often]
+        assert_equal 1, Sidekiq.options[:queues][:seldom]
       end
     end
 
@@ -225,8 +225,8 @@ class TestCli < Sidekiq::Test
         assert_equal 5, Sidekiq.options[:concurrency]
         assert_equal '/tmp/sidekiq-config-test.pid', Sidekiq.options[:pidfile]
         assert_equal '/tmp/sidekiq.log', Sidekiq.options[:logfile]
-        assert_equal 2, Sidekiq.options[:queues].count { |q| q == 'very_often' }
-        assert_equal 1, Sidekiq.options[:queues].count { |q| q == 'seldom' }
+        assert_equal 2, Sidekiq.options[:queues][:very_often]
+        assert_equal 1, Sidekiq.options[:queues][:seldom]
       end
     end
 
@@ -291,8 +291,7 @@ class TestCli < Sidekiq::Test
         assert_equal @tmp_lib_path, Sidekiq.options[:require]
         assert_equal 'snoop', Sidekiq.options[:environment]
         assert_equal @tmp_path, Sidekiq.options[:pidfile]
-        assert_equal 7, Sidekiq.options[:queues].count { |q| q == 'often' }
-        assert_equal 3, Sidekiq.options[:queues].count { |q| q == 'seldom' }
+        assert_equal Sidekiq.options[:queues], often: 7, seldom: 3
       end
     end
 
@@ -302,7 +301,7 @@ class TestCli < Sidekiq::Test
           opts = { strict: true }
           @cli.__send__ :parse_queues, opts, [['often', 7], ['repeatedly', 3]]
           @cli.__send__ :parse_queues, opts, [['once']]
-          assert_equal (%w[often] * 7 + %w[repeatedly] * 3 + %w[once]), opts[:queues]
+          assert_equal opts[:queues], often: 7, repeatedly: 3, once: 1
           assert !opts[:strict]
         end
       end
@@ -312,7 +311,7 @@ class TestCli < Sidekiq::Test
           opts = { strict: true }
           @cli.__send__ :parse_queues, opts, [['once'], ['one_time']]
           @cli.__send__ :parse_queues, opts, [['einmal']]
-          assert_equal %w[once one_time einmal], opts[:queues]
+          assert_equal opts[:queues], once: 1, one_time: 1, einmal: 1
           assert opts[:strict]
         end
       end
@@ -323,7 +322,7 @@ class TestCli < Sidekiq::Test
         it 'concatenates queue to opts[:queues] weight number of times and sets strict to false' do
           opts = { strict: true }
           @cli.__send__ :parse_queue, opts, 'often', 7
-          assert_equal %w[often] * 7, opts[:queues]
+          assert_equal opts[:queues], often: 7
           assert !opts[:strict]
         end
       end
@@ -332,7 +331,7 @@ class TestCli < Sidekiq::Test
         it 'concatenates queue to opts[:queues] once and leaves strict true' do
           opts = { strict: true }
           @cli.__send__ :parse_queue, opts, 'once', nil
-          assert_equal %w[once], opts[:queues]
+          assert_equal opts[:queues], once: 1
           assert opts[:strict]
         end
       end

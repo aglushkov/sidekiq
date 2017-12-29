@@ -25,11 +25,7 @@ module Sidekiq
 
     def initialize(options)
       @strictly_ordered_queues = !!options[:strict]
-      @queues = options[:queues].map { |q| "queue:#{q}" }
-      if @strictly_ordered_queues
-        @queues = @queues.uniq
-        @queues << TIMEOUT
-      end
+      @queues = options[:queues].map { |queue, weight| ["queue:#{queue}", weight] }
     end
 
     def retrieve_work
@@ -44,14 +40,11 @@ module Sidekiq
     # to honor weights and avoid queue starvation.
     def queues_cmd
       if @strictly_ordered_queues
-        @queues
+        strict_queues_cmd
       else
-        queues = @queues.shuffle.uniq
-        queues << TIMEOUT
-        queues
+        random_queues_cmd
       end
     end
-
 
     # By leaving this as a class method, it can be pluggable and used by the Manager actor. Making it
     # an instance method will make it async to the Fetcher actor
@@ -77,5 +70,14 @@ module Sidekiq
       Sidekiq.logger.warn("Failed to requeue #{inprogress.size} jobs: #{ex.message}")
     end
 
+    protected
+
+    def strict_queues_cmd
+      @strict_queues_cmd ||= @queues.map(&:first) << TIMEOUT
+    end
+
+    def random_queues_cmd
+      @queues.sort_by { |_queue, weight| -Math.log(rand) / weight }.map!(&:first) << TIMEOUT
+    end
   end
 end

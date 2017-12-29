@@ -134,7 +134,7 @@ module Sidekiq
           'pid' => $$,
           'tag' => @options[:tag] || '',
           'concurrency' => @options[:concurrency],
-          'queues' => @options[:queues].uniq,
+          'queues' => @options[:queues].keys,
           'labels' => @options[:labels],
           'identity' => identity,
         }
